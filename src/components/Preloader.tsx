@@ -24,7 +24,7 @@ export default function Preloader() {
     const html = document.documentElement;
     html.style.overflow = "hidden";
     const t0 = performance.now();
-    const DUR = 1500;
+    const DUR = 950;
     let raf = 0;
     const tick = (now: number) => {
       const k = Math.min(1, (now - t0) / DUR);
@@ -36,8 +36,8 @@ export default function Preloader() {
           setStage("open");
           markIntroDone();
           html.style.overflow = "";
-        }, 520);
-        setTimeout(() => setStage("gone"), 1600);
+        }, 380);
+        setTimeout(() => setStage("gone"), 1350);
       }
     };
     raf = requestAnimationFrame(tick);

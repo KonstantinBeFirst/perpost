@@ -21,22 +21,34 @@ export const LETTER_BODY = [
   "Mit freundlichen Grüßen",
 ];
 
+// One small noise tile, generated once and repeated as a pattern: cheap on phones.
+let grainTile: HTMLCanvasElement | null = null;
+function getGrainTile() {
+  if (grainTile) return grainTile;
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const ctx = c.getContext("2d")!;
+  const img = ctx.createImageData(128, 128);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const n = 128 + (Math.random() - 0.5) * 34;
+    img.data[i] = n;
+    img.data[i + 1] = n;
+    img.data[i + 2] = n * 0.96;
+    img.data[i + 3] = 22;
+  }
+  ctx.putImageData(img, 0, 0);
+  grainTile = c;
+  return c;
+}
+
 function paperGrain(ctx: CanvasRenderingContext2D, w: number, h: number, base: string) {
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, w, h);
-  const img = ctx.getImageData(0, 0, w, h);
-  const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const n = (Math.random() - 0.5) * 10;
-    d[i] += n;
-    d[i + 1] += n;
-    d[i + 2] += n * 0.8;
-  }
-  ctx.putImageData(img, 0, 0);
-  // a few long fibers
+  ctx.fillStyle = ctx.createPattern(getGrainTile(), "repeat")!;
+  ctx.fillRect(0, 0, w, h);
   ctx.globalAlpha = 0.05;
   ctx.strokeStyle = "#7a6a48";
-  for (let i = 0; i < 90; i++) {
+  for (let i = 0; i < 60; i++) {
     ctx.beginPath();
     const x = Math.random() * w;
     const y = Math.random() * h;

@@ -2,7 +2,7 @@
 
 import { motion, useMotionValueEvent, useScroll, useSpring, useTransform } from "framer-motion";
 import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import StartForm from "@/components/StartForm";
 import StoreBadges from "@/components/StoreBadges";
 import { SplitChars } from "@/components/fx";
@@ -22,6 +22,22 @@ const AT = [0.1, 0.2, 0.48, 0.78];
 
 export default function Hero3D() {
   const go = useIntroDone();
+  // The 3D scene is not needed for the first paint: start it once fonts are in and the
+  // browser is idle, so the headline, form and buttons are interactive right away.
+  const [scene, setScene] = useState(false);
+  useEffect(() => {
+    if (!go) return;
+    let cancelled = false;
+    const w = window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    const start = () => !cancelled && setScene(true);
+    (document.fonts?.ready ?? Promise.resolve()).then(() => {
+      if (w.requestIdleCallback) w.requestIdleCallback(start, { timeout: 1800 });
+      else setTimeout(start, 600);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [go]);
   const ref = useRef<HTMLElement>(null);
   const scroll = useRef(0);
   const pointer = useRef({ x: 0, y: 0 });
@@ -63,7 +79,11 @@ export default function Hero3D() {
         <div className="leak leak-white right-[-6%] top-[-10%] h-[50vh] w-[50vh] opacity-90" />
         <div className="grain pointer-events-none absolute inset-0 opacity-70" />
 
-        {go && <EnvelopeScene scroll={scroll} pointer={pointer} />}
+        {scene && (
+          <motion.div className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
+            <EnvelopeScene scroll={scroll} pointer={pointer} />
+          </motion.div>
+        )}
 
         {/* hero copy */}
         <motion.div style={{ opacity: heroO, y: heroY, pointerEvents: heroPE }} className="relative z-10 mx-auto flex h-full max-w-[1360px] flex-col px-4 pt-[100px] sm:px-8 lg:justify-center lg:pt-[60px]">
@@ -84,9 +104,9 @@ export default function Hero3D() {
               </span>
             </h1>
             <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={go ? { opacity: 1, y: 0 } : undefined}
-              transition={{ delay: 0.9, duration: 0.8 }}
+              initial={false}
+              animate={go ? { y: [8, 0] } : undefined}
+              transition={{ delay: 0.5, duration: 0.8 }}
               className="mt-6 max-w-[480px] text-[17px] leading-relaxed text-[#1f1e1e]/65 sm:text-[18px]"
             >
               Wir drucken in Farbe, kuvertieren und bringen ihn zur Deutschen Post. <b className="text-[#1f1e1e]">Ab 2,50 € inklusive Porto.</b>

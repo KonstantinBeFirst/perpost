@@ -1,6 +1,5 @@
 "use client";
 
-import { Environment, Lightformer } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -107,12 +106,7 @@ function Director({ scroll, pointer }: SceneInput) {
   const prevX = useRef(0);
 
   // textures are drawn with the site fonts; rebuild once they have loaded so nothing measures with a fallback
-  const [fontsReady, setFontsReady] = useState(0);
-  useEffect(() => {
-    document.fonts?.ready.then(() => setFontsReady(1));
-  }, []);
   const tex = useMemo(() => {
-    void fontsReady;
     const L = makeLetter();
     return {
       letter: L,
@@ -125,7 +119,7 @@ function Director({ scroll, pointer }: SceneInput) {
       trail: trailTex(),
       shadow: shadowTex(),
     };
-  }, [fontsReady]);
+  }, []);
   const geo = useMemo(() => ({ pocket: pocketShape(), flap: flapShape() }), []);
 
 
@@ -213,7 +207,7 @@ function Director({ scroll, pointer }: SceneInput) {
     });
   });
 
-  const paperMat = { roughness: 0.92, metalness: 0, envMapIntensity: 0.6 } as const;
+  const paperMat = { roughness: 0.92, metalness: 0, } as const;
 
   return (
     <>
@@ -256,7 +250,7 @@ function Director({ scroll, pointer }: SceneInput) {
           <group ref={letter} position={[0, -0.18, 0.03]}>
             <mesh position={[0, 0, 0]}>
               <planeGeometry args={[LW, LH]} />
-              <meshStandardMaterial map={tex.letter.tex} roughness={0.85} metalness={0} envMapIntensity={0.5} />
+              <meshStandardMaterial map={tex.letter.tex} roughness={0.85} metalness={0} />
             </mesh>
           </group>
 
@@ -286,10 +280,22 @@ function Director({ scroll, pointer }: SceneInput) {
 }
 
 export default function EnvelopeScene(props: SceneInput) {
+  // stop rendering while the hero is off screen
+  const wrap = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
+    <div ref={wrap} className="absolute inset-0">
     <Canvas
+      frameloop={visible ? "always" : "never"}
       camera={{ position: [0, 0, 11], fov: 32 }}
-      dpr={[1, 2]}
+      dpr={[1, 1.6]}
       flat
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ position: "absolute", inset: 0 }}
@@ -298,12 +304,8 @@ export default function EnvelopeScene(props: SceneInput) {
       <directionalLight position={[-5, 6, 7]} intensity={1.7} color="#fff3dc" />
       <directionalLight position={[6, -2, 4]} intensity={0.6} color="#bcd0ff" />
       <pointLight position={[3.5, -1.5, 2.5]} intensity={6} distance={10} color="#ffd98a" />
-      <Environment resolution={128}>
-        <Lightformer form="rect" intensity={2.2} position={[0, 4, 6]} scale={[10, 3, 1]} />
-        <Lightformer form="rect" intensity={1.2} color="#F7CF70" position={[6, 0, 3]} scale={[3, 6, 1]} />
-        <Lightformer form="circle" intensity={0.8} position={[-6, -2, 4]} scale={4} />
-      </Environment>
       <Director {...props} />
     </Canvas>
+    </div>
   );
 }
