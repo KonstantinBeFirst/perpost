@@ -11,6 +11,7 @@ export const nav = [
   { label: "Die App", href: "#app" },
   { label: "Kündigen", href: `${BRIEF_ORIGIN}/kuendigen` },
   { label: "Aktuelles", href: "/aktuelles/" },
+  { label: "Für Unternehmen", href: B2B, external: true },
 ];
 
 export const chips = [

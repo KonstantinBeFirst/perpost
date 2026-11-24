@@ -1,3 +1,6 @@
+"use client";
+
+import { track } from "@/lib/analytics";
 import { APP_STORE, GOOGLE_PLAY } from "@/lib/content";
 
 /** Both store buttons drawn as one component: identical size, radius and type. */
@@ -8,6 +11,7 @@ function StoreButton({ href, label, top, name, icon }: { href: string; label: st
       target="_blank"
       rel="noopener"
       aria-label={label}
+      onClick={() => track("app_store_click", { store: name === "App Store" ? "apple" : "google" })}
       data-cursor="Laden"
       className="group relative inline-flex h-12 w-[172px] items-center gap-3 overflow-hidden rounded-full bg-ink pl-1.5 pr-5 text-white shadow-[0_14px_30px_-18px_rgba(31,30,30,0.7)] ring-1 ring-black/5 transition duration-300 hover:-translate-y-0.5"
     >

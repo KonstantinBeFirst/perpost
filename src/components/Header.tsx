@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { nav } from "@/lib/content";
+import { track } from "@/lib/analytics";
 import { useBerlinClock, useIntroDone } from "@/lib/intro";
 import { Magnetic, TrackingBar } from "./fx";
 import Logo from "./Logo";
@@ -12,7 +13,7 @@ function LiveChip({ compact = false }: { compact?: boolean }) {
   return (
     <div
       data-cursor={compact ? undefined : "Live"}
-      className="flex h-10 items-center gap-2.5 rounded-full bg-ink/[0.045] pl-3 pr-3.5 text-[12px] font-semibold tracking-wide text-ink-2 ring-1 ring-inset ring-ink/[0.06]"
+      className="flex h-10 items-center gap-2.5 whitespace-nowrap rounded-full bg-ink/[0.045] pl-3 pr-3.5 text-[12px] font-semibold tracking-wide text-ink-2 ring-1 ring-inset ring-ink/[0.06]"
     >
       <span className="relative flex h-2 w-2">
         {c?.open && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3fb27f] opacity-70" />}
@@ -71,21 +72,27 @@ export default function Header() {
         </a>
         <nav className="ml-4 hidden items-center gap-0.5 xl:flex">
           {nav.map((n) => (
-            <a key={n.label} href={n.href} className="group relative rounded-full px-3.5 py-2 text-[15px] font-medium text-ink-2 transition hover:bg-white/70 hover:text-ink">
+            <a
+              key={n.label}
+              href={n.href}
+              onClick={n.external ? () => track("b2b_click", { placement: "header" }) : undefined}
+              className="group relative whitespace-nowrap rounded-full px-3 py-2 text-[15px] font-medium text-ink-2 transition hover:bg-white/70 hover:text-ink"
+            >
               {n.label}
-              
+              {n.external && <span aria-hidden> ↗</span>}
             </a>
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3">
-          <div className="hidden lg:block">
+          {/* with the full nav (xl) the clock only fits from 2xl on */}
+          <div className="hidden lg:block xl:hidden 2xl:block">
             <LiveChip />
           </div>
           <Magnetic className="hidden sm:inline-block">
             <a
               href="#start"
               data-cursor="Los"
-              className="group relative inline-flex h-12 items-center gap-2 overflow-hidden rounded-full bg-brand px-6 text-[15px] font-semibold text-accent"
+              className="group relative inline-flex h-12 items-center gap-2 overflow-hidden whitespace-nowrap rounded-full bg-brand px-6 text-[15px] font-semibold text-accent"
             >
               <span className="absolute inset-0 translate-y-full rounded-full bg-ink transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-y-0" />
               <span className="relative">Brief starten</span>
@@ -122,14 +129,17 @@ export default function Header() {
                 <motion.a
                   key={n.label}
                   href={n.href}
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    if (n.external) track("b2b_click", { placement: "mobile_menu" });
+                    setOpen(false);
+                  }}
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 + i * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   className="flex items-center justify-between border-b border-line py-4 font-display text-[30px] font-black tracking-tight text-ink"
                 >
                   {n.label}
-                  <span className="text-[20px] text-ink-2">→</span>
+                  <span className="text-[20px] text-ink-2">{n.external ? "↗" : "→"}</span>
                 </motion.a>
               ))}
             </nav>

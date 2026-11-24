@@ -2,7 +2,8 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { BRIEF_ORIGIN, HANDOFF_URL } from "@/lib/content";
+import { HANDOFF_URL } from "@/lib/content";
+import { track } from "@/lib/analytics";
 import { OPEN_FLOW } from "@/lib/flow";
 import { CHIPS, STARTER_EVENT, applyStarter, readDraft, writeDraft, type StarterDetail } from "@/lib/starter";
 import Modal from "./Modal";
@@ -13,6 +14,7 @@ const T = {
   help: "Beschreib kurz dein Anliegen in eigenen Worten. Wir helfen dir beim Formulieren.",
   placeholder: "Zum Beispiel: Ich möchte meinen Handyvertrag zum nächstmöglichen Termin kündigen.",
   submit: "Weiter",
+  sending: "Dein Brief wird vorbereitet …",
   after: "Dein Text wird übernommen. Du kannst ihn im nächsten Schritt weiterbearbeiten.",
   empty: "Bitte beschreibe kurz dein Anliegen.",
   tooLong: `Bitte kürze deinen Text auf höchstens ${MAX.toLocaleString("de-DE")} Zeichen.`,
@@ -22,15 +24,21 @@ const T = {
 type Rec = { lang: string; interimResults: boolean; onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void; onend: () => void; start: () => void; stop: () => void };
 
 /**
- * The whole start of a letter in one popup: the entry form (same rules as the live site),
- * then the PerPost app itself inside the same sheet. The form posts into the iframe, so the
- * visitor never leaves perpost.app. (The hand-off only accepts allowed origins: on preview
- * domains the app answers 403 until the owner allows that origin.)
+ * The start of a letter in a popup: the entry form, same rules as the live site.
+ * "Weiter" is a native top-level form POST to brief.perpost.app/api/handoff, exactly like
+ * the live perpost.app: payment, 3-D Secure and the rest of the flow run in their own tab,
+ * never inside a frame. (The hand-off only accepts allowed origins: on preview domains it
+ * answers 403 until the owner allows that origin.)
  */
 export default function FlowModal() {
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<"form" | "app">("form");
-  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  // back from brief.perpost.app via the bfcache: make the form usable again
+  useEffect(() => {
+    const on = (e: PageTransitionEvent) => e.persisted && setSending(false);
+    window.addEventListener("pageshow", on);
+    return () => window.removeEventListener("pageshow", on);
+  }, []);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
@@ -48,6 +56,7 @@ export default function FlowModal() {
   }, []);
   const ref = useRef<HTMLTextAreaElement>(null);
   const rec = useRef<Rec | null>(null);
+  const usedVoice = useRef(false);
   const ids = { field: useId(), help: useId(), err: useId(), counter: useId() };
 
   useEffect(() => {
@@ -78,7 +87,6 @@ export default function FlowModal() {
       });
     }
     setError(null);
-    setStep("form");
     setOpen(true);
     focusEnd();
   }, []);
@@ -130,6 +138,7 @@ export default function FlowModal() {
     };
     r.onend = () => setListening(false);
     rec.current = r;
+    usedVoice.current = true;
     setListening(true);
     r.start();
   };
@@ -148,63 +157,27 @@ export default function FlowModal() {
       ref.current?.focus();
       return;
     }
-    // let the native POST go into the iframe below
-    setLoading(true);
-    setStep("app");
+    if (sending) {
+      e.preventDefault();
+      return;
+    }
+    // the native POST navigates to brief.perpost.app; the draft stays in sessionStorage
+    // so back navigation or a failed hand-off restores the text
+    track("letter_start", { source: "popup_form", input: usedVoice.current ? "voice" : "text" });
+    setSending(true);
   };
 
   const close = useCallback(() => setOpen(false), []);
 
   return (
-    <Modal open={open} onClose={close} label="Neuen Brief schreiben" wide={step === "app"} tall={step === "app"}>
-      {/* the app lives here once the form is sent */}
-      <div className={`${step === "app" ? "flex" : "hidden"} min-h-0 flex-1 flex-col`}>
-        <div className="flex items-center gap-3 border-b border-ink/[0.07] px-4 pb-3 pt-3 pr-16 sm:px-6 sm:pt-5">
-          <button onClick={() => setStep("form")} className="grid h-9 w-9 place-items-center rounded-full bg-white/80 ring-1 ring-ink/[0.07] transition hover:bg-white" aria-label="Zurück zum Text">
-            ←
-          </button>
-          <div className="flex min-w-0 items-center gap-2 rounded-full bg-ink/[0.05] px-3 py-1.5 font-mono text-[12px] text-ink-2">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-              <rect x="5" y="11" width="14" height="10" rx="2" />
-              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-            </svg>
-            <span className="truncate">brief.perpost.app</span>
-          </div>
-          <a href={BRIEF_ORIGIN} target="_blank" rel="noopener" className="ml-auto hidden text-[13px] font-semibold text-ink-2 underline decoration-ink/20 underline-offset-4 hover:text-ink sm:inline">
-            In neuem Tab öffnen ↗
-          </a>
-        </div>
-        <div className="relative min-h-0 flex-1 bg-white">
-          <iframe name="pp-flow" title="PerPost Brief erstellen" className="h-full w-full" onLoad={() => setLoading(false)} allow="microphone; payment; clipboard-write" />
-          <AnimatePresence>
-            {loading && (
-              <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 grid place-items-center bg-[#f6f3ec]">
-                <div className="flex flex-col items-center gap-4">
-                  <motion.div
-                    className="relative h-12 w-[74px] rounded-[5px] bg-[#efe5c8] shadow-lg"
-                    animate={{ y: [0, -8, 0], rotate: [-3, 2, -3] }}
-                    transition={{ duration: 1.2, repeat: Infinity }}
-                  >
-                    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 74 48">
-                      <path d="M1 1 L37 26 L73 1" fill="var(--sun)" stroke="#e2d3aa" />
-                    </svg>
-                  </motion.div>
-                  <div className="text-[14px] font-semibold text-ink-2">Dein Brief wird vorbereitet …</div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
+    <Modal open={open} onClose={close} label="Neuen Brief schreiben">
       {/* entry form */}
       <form
         action={HANDOFF_URL}
         method="post"
-        target="pp-flow"
         onSubmit={onSubmit}
         noValidate
-        className={`${step === "form" ? "flex" : "hidden"} h-full min-h-0 flex-col sm:h-auto`}
+        className="flex h-full min-h-0 flex-col sm:h-auto"
       >
         {/* scrolling body */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4 pt-5 sm:px-9 sm:pt-9">
@@ -300,10 +273,36 @@ export default function FlowModal() {
 
         {/* footer stays above the keyboard */}
         <div className="shrink-0 border-t border-ink/[0.07] bg-[#f6f3ec] px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:border-0 sm:bg-transparent sm:px-9 sm:pb-9 sm:pt-2">
-        <button type="submit" data-cursor="Weiter" className="group relative flex h-14 w-full sm:h-[60px] items-center justify-center gap-2 overflow-hidden rounded-[20px] bg-ink text-[18px] font-semibold text-accent">
+        <button
+          type="submit"
+          data-cursor="Weiter"
+          aria-busy={sending || undefined}
+          className="group relative flex h-14 w-full sm:h-[60px] items-center justify-center gap-2 overflow-hidden rounded-[20px] bg-ink text-[18px] font-semibold text-accent"
+        >
           <span className="absolute inset-0 -translate-x-full bg-black transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-0" />
-          <span className="relative">{T.submit}</span>
-          <span className="relative transition-transform group-hover:translate-x-1">→</span>
+          {sending ? (
+            <>
+              <motion.svg
+                width="26"
+                height="18"
+                viewBox="0 0 26 18"
+                className="relative"
+                initial={{ x: -6, rotate: -4 }}
+                animate={{ x: [-6, 4, -6], rotate: [-4, 3, -4] }}
+                transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                aria-hidden
+              >
+                <rect x="1" y="1" width="24" height="16" rx="2" fill="#fbf9f4" />
+                <path d="M1.5 1.5 13 10 24.5 1.5" fill="var(--accent)" stroke="#e2d3aa" />
+              </motion.svg>
+              <span className="relative">{T.sending}</span>
+            </>
+          ) : (
+            <>
+              <span className="relative">{T.submit}</span>
+              <span className="relative transition-transform group-hover:translate-x-1">→</span>
+            </>
+          )}
         </button>
         {!kb && <p className="mt-2 text-center text-[12.5px] leading-snug text-ink-2">{T.after}</p>}
         </div>

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Magnetic } from "./fx";
 import Logo from "./Logo";
 import { B2B, BRIEF_ORIGIN, faq } from "@/lib/content";
+import { track } from "@/lib/analytics";
 import { Eyebrow, H2, Mark, Reveal, ease } from "./ui";
 
 export function Business() {
@@ -15,6 +16,7 @@ export function Business() {
           href={B2B}
           target="_blank"
           rel="noopener"
+          onClick={() => track("b2b_click", { placement: "business_section" })}
           className="group relative flex flex-col gap-6 overflow-hidden rounded-[32px] bg-ink p-8 text-white transition sm:flex-row sm:items-center sm:justify-between sm:p-12"
         >
           <div className="leak leak-sun -right-[10%] -top-[40%] h-[180%] w-[45%] opacity-35 transition-opacity duration-700 group-hover:opacity-60" />
@@ -215,7 +217,11 @@ export function Footer() {
               <ul className="mt-4 space-y-2.5">
                 {c.l.map(([t, h]) => (
                   <li key={t}>
-                    <a href={h} className="group relative text-[15px] text-ink transition hover:text-brand">
+                    <a
+                      href={h}
+                      onClick={h === B2B ? () => track("b2b_click", { placement: "footer" }) : undefined}
+                      className="group relative text-[15px] text-ink transition hover:text-brand"
+                    >
                       {t}
                       <span className="absolute -bottom-0.5 left-0 h-[2px] w-full origin-left scale-x-0 bg-accent transition-transform duration-300 group-hover:scale-x-100" />
                     </a>
