@@ -36,6 +36,16 @@ export default function FlowModal() {
   const [restored, setRestored] = useState(false);
   const [listening, setListening] = useState(false);
   const [canDictate, setCanDictate] = useState(false);
+  // on-screen keyboard open: drop secondary text so the field and the button keep the room
+  const [kb, setKb] = useState(false);
+  useEffect(() => {
+    const v = window.visualViewport;
+    if (!v) return;
+    const on = () => setKb(v.height < Math.min(window.screen.height * 0.72, 620));
+    on();
+    v.addEventListener("resize", on);
+    return () => v.removeEventListener("resize", on);
+  }, []);
   const ref = useRef<HTMLTextAreaElement>(null);
   const rec = useRef<Rec | null>(null);
   const ids = { field: useId(), help: useId(), err: useId(), counter: useId() };
@@ -194,13 +204,15 @@ export default function FlowModal() {
         target="pp-flow"
         onSubmit={onSubmit}
         noValidate
-        className={`${step === "form" ? "block" : "hidden"} overflow-y-auto px-5 pb-6 pt-4 sm:px-9 sm:pb-9 sm:pt-9`}
+        className={`${step === "form" ? "flex" : "hidden"} h-full min-h-0 flex-col sm:h-auto`}
       >
+        {/* scrolling body */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4 pt-5 sm:px-9 sm:pt-9">
         <div className="text-[11.5px] font-semibold uppercase tracking-[0.2em] text-ink-2">Neuer Brief</div>
-        <label htmlFor={ids.field} className="mt-2 block pr-10 font-display text-[30px] font-black leading-[1.02] tracking-[-0.02em] text-ink sm:text-[40px]">
+        <label htmlFor={ids.field} className="mt-2 block pr-12 font-display text-[27px] font-black leading-[1.02] tracking-[-0.02em] text-ink sm:text-[40px]">
           {T.title}
         </label>
-        <p id={ids.help} className="mt-2 text-[15px] leading-relaxed text-ink-2">
+        <p id={ids.help} className={`mt-2 text-[15px] leading-relaxed text-ink-2 ${kb ? "sr-only" : ""}`}>
           {T.help}
         </p>
 
@@ -209,7 +221,7 @@ export default function FlowModal() {
             ref={ref}
             id={ids.field}
             name="problem"
-            rows={6}
+            rows={4}
             value={text}
             onChange={(e) => update(e.target.value)}
             placeholder={T.placeholder}
@@ -217,7 +229,7 @@ export default function FlowModal() {
             aria-describedby={[ids.help, ids.counter, error ? ids.err : null].filter(Boolean).join(" ")}
             animate={error ? { x: [0, -7, 6, -3, 0] } : { x: 0 }}
             transition={{ duration: 0.35 }}
-            className={`lined block w-full resize-none rounded-[20px] border bg-white px-5 py-4 pr-16 text-[17px] leading-[28px] text-ink shadow-[inset_0_1px_3px_rgba(31,30,30,0.05)] outline-none transition placeholder:text-ink-2/50 ${
+            className={`lined block min-h-[128px] w-full resize-none rounded-[20px] border bg-white px-5 py-4 pr-16 sm:min-h-[196px] text-[17px] leading-[28px] text-ink shadow-[inset_0_1px_3px_rgba(31,30,30,0.05)] outline-none transition placeholder:text-ink-2/50 ${
               error ? "border-stamp" : "border-ink/[0.08] focus:border-ink/30"
             }`}
           />
@@ -273,13 +285,6 @@ export default function FlowModal() {
         </AnimatePresence>
         {restored && !error && <p className="pt-3 text-[13px] text-ink-2">{T.restored}</p>}
 
-        <button type="submit" data-cursor="Weiter" className="group relative mt-6 flex h-[60px] w-full items-center justify-center gap-2 overflow-hidden rounded-[20px] bg-ink text-[18px] font-semibold text-accent">
-          <span className="absolute inset-0 -translate-x-full bg-black transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-0" />
-          <span className="relative">{T.submit}</span>
-          <span className="relative transition-transform group-hover:translate-x-1">→</span>
-        </button>
-        <p className="mt-2.5 text-center text-[13px] text-ink-2">{T.after}</p>
-
         <div className="mt-6 grid grid-cols-3 gap-2 border-t border-ink/[0.07] pt-5 text-center text-[12px] leading-snug text-ink-2">
           <div>
             <b className="block font-display text-[18px] text-ink">2,50 €</b>inkl. Porto
@@ -290,6 +295,17 @@ export default function FlowModal() {
           <div>
             <b className="block font-display text-[18px] text-ink">Bis 17 Uhr</b>werktags am selben Tag gedruckt
           </div>
+        </div>
+        </div>
+
+        {/* footer stays above the keyboard */}
+        <div className="shrink-0 border-t border-ink/[0.07] bg-[#f6f3ec] px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:border-0 sm:bg-transparent sm:px-9 sm:pb-9 sm:pt-2">
+        <button type="submit" data-cursor="Weiter" className="group relative flex h-14 w-full sm:h-[60px] items-center justify-center gap-2 overflow-hidden rounded-[20px] bg-ink text-[18px] font-semibold text-accent">
+          <span className="absolute inset-0 -translate-x-full bg-black transition-transform duration-500 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-0" />
+          <span className="relative">{T.submit}</span>
+          <span className="relative transition-transform group-hover:translate-x-1">→</span>
+        </button>
+        {!kb && <p className="mt-2 text-center text-[12.5px] leading-snug text-ink-2">{T.after}</p>}
         </div>
       </form>
     </Modal>

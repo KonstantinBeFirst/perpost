@@ -28,7 +28,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f8f7f0",
+  themeColor: "#f2eee6",
+  // Android: the keyboard shrinks the page, so popups stay above it
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -41,6 +41,12 @@ export function Cursor() {
       setShown(true);
     };
     const leave = () => setShown(false);
+    // pointer events stop at iframes (the app inside the popup): hide ours, the iframe shows its own cursor
+    const out = (e: PointerEvent) => {
+      const to = e.relatedTarget as HTMLElement | null;
+      if (!to || to.tagName === "IFRAME") setShown(false);
+    };
+    document.addEventListener("pointerout", out);
     const d = () => setDown(true);
     const u = () => setDown(false);
     window.addEventListener("pointermove", move);
@@ -50,6 +56,7 @@ export function Cursor() {
     return () => {
       window.removeEventListener("pointermove", move);
       document.documentElement.removeEventListener("pointerleave", leave);
+      document.removeEventListener("pointerout", out);
       window.removeEventListener("pointerdown", d);
       window.removeEventListener("pointerup", u);
       document.documentElement.classList.remove("has-cursor");
@@ -63,7 +70,7 @@ export function Cursor() {
     <>
       <motion.div
         aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-[400] flex items-center justify-center rounded-full"
+        className="pointer-events-none fixed left-0 top-0 z-[900] flex items-center justify-center rounded-full"
         style={{ x: rx, y: ry, translateX: "-50%", translateY: "-50%" }}
         animate={{
           opacity: shown ? 1 : 0,
@@ -82,7 +89,7 @@ export function Cursor() {
           </motion.span>
         )}
       </motion.div>
-      <motion.div aria-hidden className="pointer-events-none fixed left-0 top-0 z-[401]" style={{ x, y, opacity: shown ? 1 : 0 }}>
+      <motion.div aria-hidden className="pointer-events-none fixed left-0 top-0 z-[901]" style={{ x, y, opacity: shown ? 1 : 0 }}>
         {pen ? (
           <svg width="22" height="22" viewBox="0 0 24 24" className="-translate-x-[3px] -translate-y-[19px] text-brand" fill="currentColor">
             <path d="M3 21l1.6-5.6L15.8 4.2a2 2 0 0 1 2.8 0l1.2 1.2a2 2 0 0 1 0 2.8L8.6 19.4z" />
