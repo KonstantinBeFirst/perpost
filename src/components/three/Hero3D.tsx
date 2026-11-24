@@ -118,7 +118,7 @@ export default function Hero3D() {
 
         {/* story captions */}
         <motion.div style={{ opacity: storyO }} className="pointer-events-none absolute inset-0 z-10 mx-auto flex max-w-[1360px] flex-col justify-end px-4 pb-8 sm:px-8 lg:justify-center lg:pb-0">
-          <motion.div style={{ pointerEvents: storyPE }} className="glass max-w-[480px] rounded-[28px] p-5 sm:p-7 lg:bg-none lg:!bg-transparent lg:!shadow-none lg:!border-transparent lg:p-0 lg:![backdrop-filter:none] lg:before:hidden">
+          <motion.div style={{ pointerEvents: storyPE }} className="glass max-w-[480px] rounded-[28px] p-5 sm:p-7 lg:max-w-[520px] lg:p-8">
             <div className="flex items-center justify-between gap-4">
               <span className="text-[12px] font-semibold uppercase tracking-[0.2em] text-[#1f1e1e]/50">So funktioniert’s</span>
               <button
@@ -144,7 +144,7 @@ export default function Hero3D() {
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <div className="font-serif text-[36px] italic leading-none text-[#1f1e1e]/25 lg:text-[54px]">{s.n}</div>
-                  <h2 className="mt-1 font-display text-[clamp(30px,7.6vw,64px)] font-black leading-[0.95] tracking-[-0.025em]">{s.t}</h2>
+                  <h2 className="mt-1 font-display text-[clamp(30px,7.6vw,50px)] font-black leading-[0.95] tracking-[-0.025em]">{s.t}</h2>
                   <p className="mt-3 text-[15.5px] leading-relaxed text-[#1f1e1e]/60 lg:text-[17px]">{s.d}</p>
                 </motion.div>
               ))}
