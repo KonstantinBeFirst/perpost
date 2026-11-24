@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { nav } from "@/lib/content";
 import { useBerlinClock, useIntroDone } from "@/lib/intro";
-import { Magnetic } from "./fx";
+import { Magnetic, TrackingBar } from "./fx";
 import Logo from "./Logo";
 
 function LiveChip({ compact = false }: { compact?: boolean }) {
@@ -61,11 +61,11 @@ export default function Header() {
   return (
     <motion.header
       initial={{ y: -90 }}
-      animate={{ y: ready && (!hidden || open) ? 0 : -90 }}
+      animate={{ y: ready ? 0 : -90 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: ready && !scrolled ? 0.5 : 0 }}
       className="fixed inset-x-0 top-2.5 z-50 px-2.5 sm:top-4 sm:px-5"
     >
-      <div className={`glass mx-auto flex h-[60px] max-w-[1280px] items-center gap-5 rounded-full pl-5 pr-2 transition-shadow duration-500 sm:h-[68px] sm:pl-7 ${scrolled ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_26px_60px_-26px_rgba(31,30,30,0.45)]" : ""}`}>
+      <div className={`glass relative mx-auto flex h-[60px] max-w-[1280px] items-center gap-5 rounded-full pl-5 pr-2 transition-shadow duration-500 sm:h-[68px] sm:pl-7 ${scrolled ? "shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_26px_60px_-26px_rgba(31,30,30,0.45)]" : ""}`}>
         <a href="/" aria-label="PerPost Startseite" className="shrink-0" data-cursor="Start">
           <Logo className="h-[28px] w-auto sm:h-[32px]" />
         </a>
@@ -104,6 +104,7 @@ export default function Header() {
             </span>
           </button>
         </div>
+        <TrackingBar />
       </div>
 
       <AnimatePresence>

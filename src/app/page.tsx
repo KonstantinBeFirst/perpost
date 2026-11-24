@@ -1,7 +1,7 @@
 import AppSection from "@/components/AppSection";
 import Board from "@/components/Board";
 import { Business, Faq, FinalCta, Footer, Vision } from "@/components/Closing";
-import { Cursor, TrackingBar } from "@/components/fx";
+import { Cursor } from "@/components/fx";
 import FlowModal from "@/components/FlowModal";
 import Header from "@/components/Header";
 import TopicModal from "@/components/TopicModal";
@@ -39,7 +39,6 @@ export default function Home() {
       <Preloader />
       <SmoothScroll />
       <Cursor />
-      <TrackingBar />
       <Header />
       <main>
         <Hero3D />

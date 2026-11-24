@@ -129,21 +129,26 @@ export function Magnetic({ children, strength = 0.3, className = "" }: { childre
   );
 }
 
-/** Reading progress as a shipment track: a small envelope rides the line. */
+/**
+ * Reading progress as a shipment track, drawn along the bottom edge of the header capsule:
+ * a hairline that fills and a small envelope riding on its tip.
+ */
 export function TrackingBar() {
   const { scrollYProgress } = useScroll();
   const p = useSpring(scrollYProgress, { stiffness: 140, damping: 30, restDelta: 0.001 });
-  const left = useTransform(p, (v) => `calc(${v * 100}% - ${v * 22}px)`);
+  const left = useTransform(p, (v) => `${v * 100}%`);
+  const show = useTransform(p, [0, 0.01], [0, 1]);
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px]">
-      <motion.div className="h-full origin-left bg-brand" style={{ scaleX: p }} />
-      <motion.div className="absolute -top-[5px]" style={{ left }}>
-        <svg width="22" height="14" viewBox="0 0 22 14">
-          <rect x="0.5" y="0.5" width="21" height="13" rx="2" fill="var(--paper)" stroke="var(--brand)" />
-          <path d="M1 1 L11 8 L21 1" fill="var(--sun)" stroke="var(--brand)" strokeWidth="1" />
+    <motion.div aria-hidden style={{ opacity: show }} className="pointer-events-none absolute inset-x-7 bottom-[5px] h-[2px] sm:inset-x-9">
+      <div className="absolute inset-0 rounded-full bg-ink/[0.07]" />
+      <motion.div className="absolute inset-y-0 left-0 w-full origin-left rounded-full bg-ink" style={{ scaleX: p }} />
+      <motion.div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left }}>
+        <svg width="16" height="11" viewBox="0 0 16 11" className="drop-shadow-[0_1px_1px_rgba(31,30,30,0.25)]">
+          <rect x="0.5" y="0.5" width="15" height="10" rx="1.6" fill="#fbf9f4" stroke="#1f1e1e" strokeWidth="1" />
+          <path d="M1 1.2 L8 6 L15 1.2" fill="#f7cf70" stroke="#1f1e1e" strokeWidth="1" strokeLinejoin="round" />
         </svg>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 
